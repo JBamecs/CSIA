@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>IB IA/EE Topic Organizer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>IB IA & EE Topic Organizer</h1>
+    <button onclick="start('IA')">Start IA</button>
+    <button onclick="start('EE')">Start EE</button>
+
+    <div id="questionnaire" style="display:none;">
+      <h2 id="modeHeader"></h2>
+      <select id="subjectSelect" onchange="loadQuestions()">
+        <option value="">Select Subject</option>
+        <option value="Biology">Biology</option>
+        <option value="History">History</option>
+        <option value="Math">Math</option>
+      </select>
+      <div id="questionsArea"></div>
+      <button onclick="suggestTopic()">Suggest Topic</button>
+      <div id="resultsArea"></div>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
