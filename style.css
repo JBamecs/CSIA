@@ -1,23 +1,29 @@
 body {
-    font-family: Arial, sans-serif;
-    background: #f5f5f5;
-    color: #222;
-    padding: 20px;
-  }
-  
-  .container {
-    max-width: 600px;
-    margin: auto;
-    text-align: center;
-  }
-  
-  button {
-    padding: 10px;
-    margin: 10px;
-  }
-  
-  .dark-mode {
-    background: #111;
-    color: #eee;
-  }
-  
+  font-family: Arial, sans-serif;
+  background: #f0f0f5;
+  padding: 20px;
+}
+
+.container {
+  background: #fff;
+  padding: 25px;
+  border-radius: 8px;
+  max-width: 600px;
+  margin: auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+h1, h2 {
+  color: #005a9c;
+}
+
+label {
+  display: block;
+  margin-top: 15px;
+}
+
+input, select, button {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+}
