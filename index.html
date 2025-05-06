@@ -1,45 +1,41 @@
-<!-- Section: Home -->
-<div id="homeSection">
-  <label for="mode">Choose your path:</label>
-  <select id="mode">
-    <option value="IA">Internal Assessment (IA)</option>
-    <option value="EE">Extended Essay (EE)</option>
-  </select>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>IB IA & EE Topic Organizer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <section id="homeSection" class="landing">
+    <div class="overlay">
+      <div class="landing-content">
+        <h1>IB IA & EE Topic Organizer</h1>
+        <p>Your smart assistant for finding the perfect topic and research question</p>
 
-  <label for="subject">Choose subject:</label>
-  <select id="subject">
-    <option value="Biology">Biology</option>
-    <option value="History">History</option>
-    <option value="Math">Mathematics</option>
-    <!-- Add more subjects -->
-  </select>
+        <div class="form-card">
+          <label for="mode">Choose your path:</label>
+          <select id="mode">
+            <option value="IA">Internal Assessment (IA)</option>
+            <option value="EE">Extended Essay (EE)</option>
+          </select>
 
-  <button onclick="goToQuestions()">Start</button>
-</div>
+          <label for="subject">Select your IB subject:</label>
+          <select id="subject">
+            <option value="Biology">Biology</option>
+            <option value="History">History</option>
+            <option value="Mathematics">Mathematics</option>
+            <option value="Economics">Economics</option>
+            <option value="English">English</option>
+            <option value="Psychology">Psychology</option>
+            <!-- Add more if needed -->
+          </select>
 
-<!-- Section: Questionnaire -->
-<div id="questionnaireSection" style="display: none;">
-  <h3>Answer the following:</h3>
-  <label>What topic area are you interested in?</label>
-  <input id="interest" type="text"/>
+          <button onclick="goToQuestions()">Start</button>
+        </div>
+      </div>
+    </div>
+  </section>
 
-  <label>What personal issue relates to this topic?</label>
-  <input id="personal" type="text"/>
-
-  <label>What type of evidence/data would you consider?</label>
-  <input id="data" type="text"/>
-
-  <button onclick="generateIdeas()">Generate Ideas</button>
-</div>
-
-<!-- Section: Output -->
-<div id="outputSection" style="display: none;">
-  <h2>Generated Topic Ideas:</h2>
-  <ul id="ideasList"></ul>
-
-  <h3>Suggested Research Question:</h3>
-  <p id="researchQuestion"></p>
-
-  <button onclick="editAnswers()">Edit</button>
-  <button onclick="exportPDF()">Export as PDF</button>
-</div>
+  <script src="script.js"></script>
+</body>
+</html>
