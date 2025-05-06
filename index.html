@@ -1,41 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>IB IA & EE Topic Organizer</title>
-  <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>IB IA & EE Topic Organizer</title>
+<link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <section id="homeSection" class="landing">
-    <div class="overlay">
-      <div class="landing-content">
-        <h1>IB IA & EE Topic Organizer</h1>
-        <p>Your smart assistant for finding the perfect topic and research question</p>
+  <div id="app" role="main" aria-label="IB IA and EE Topic Organizer Tool">
+    <h1>IB IA &amp; EE Topic Organizer</h1>
 
-        <div class="form-card">
-          <label for="mode">Choose your path:</label>
-          <select id="mode">
-            <option value="IA">Internal Assessment (IA)</option>
-            <option value="EE">Extended Essay (EE)</option>
-          </select>
+    <div id="landing">
+      <label for="modeSelect">Select Mode</label>
+      <select id="modeSelect" aria-describedby="modeDesc">
+        <option value="" disabled selected>Choose mode...</option>
+        <option value="IA">Internal Assessment (IA)</option>
+        <option value="EE">Extended Essay (EE)</option>
+      </select>
+      <small id="modeDesc">Choose between IA and EE mode</small>
 
-          <label for="subject">Select your IB subject:</label>
-          <select id="subject">
-            <option value="Biology">Biology</option>
-            <option value="History">History</option>
-            <option value="Mathematics">Mathematics</option>
-            <option value="Economics">Economics</option>
-            <option value="English">English</option>
-            <option value="Psychology">Psychology</option>
-            <!-- Add more if needed -->
-          </select>
+      <label for="subjectSelect" style="margin-top: 15px;">Select Subject</label>
+      <select id="subjectSelect" aria-describedby="subjectDesc" disabled>
+        <option value="" disabled selected>Choose subject...</option>
+      </select>
+      <small id="subjectDesc">Select your IB subject</small>
 
-          <button onclick="goToQuestions()">Start</button>
+      <button id="startBtn" disabled>Start Questionnaire</button>
+    </div>
+
+    <form id="questionnaire" aria-live="polite" aria-label="Questionnaire Form">
+      <!-- Dynamic questions will appear here -->
+    </form>
+
+    <div id="resultSection">
+      <div id="results" aria-live="polite">
+        <h2>Topic Suggestions</h2>
+        <div id="topics" class="topics" aria-label="Suggested topics"></div>
+
+        <h2>Research Questions</h2>
+        <div id="researchQuestions" class="research-questions" aria-label="Editable research questions"></div>
+
+        <div class="flex-row" style="margin-top:15px;">
+          <button id="regenerateBtn">Modify Answers / Regenerate</button>
+          <button id="exportPdfBtn">Export Results as PDF</button>
         </div>
       </div>
     </div>
-  </section>
+  </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
+```
