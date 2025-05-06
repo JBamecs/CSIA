@@ -326,7 +326,6 @@
       const researchQuestionsDiv = document.getElementById('researchQuestions');
       const regenerateBtn = document.getElementById('regenerateBtn');
       const exportPdfBtn = document.getElementById('exportPdfBtn');
-      const resultSection = document.getElementById('resultSection');
 
       // Helper: Populate subjects select
       function populateSubjects() {
@@ -422,7 +421,6 @@
           input.id = 'ans' + i;
           input.name = 'ans' + i;
           input.value = state.answers[i] || '';
-          input.setAttribute('aria-describedby', 'help'+i);
           input.required = true;
           input.autocomplete = 'off';
 
@@ -470,7 +468,7 @@
         const topics = [];
         const ans = state.answers;
 
-        // Some very basic realistic topic ideas using answers
+        // Basic topic ideas using answers
         topics.push(`Exploring the impact of "${ans[0]}" on "${ans[1]}"`);
         topics.push(`A study of "${ans[1]}" within the context of "${ans[2]}"`);
         topics.push(`Investigating the role of "${ans[0]}" and "${ans[2]}" in "${state.subject}"`);
@@ -516,44 +514,43 @@
 
       // Export as PDF using jsPDF
       exportPdfBtn.addEventListener('click', () => {
-        import('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js').then(({ jsPDF }) => {
-          const doc = new jsPDF.jsPDF({
-            unit: 'pt',
-            format: 'a4'
-          });
-
-          doc.setFontSize(20);
-          doc.text('IB IA & EE Topic Organizer Results', 40, 60);
-
-          // Write Mode and Subject
-          doc.setFontSize(12);
-          doc.text(`Mode: ${state.mode}`, 40, 90);
-          doc.text(`Subject: ${state.subject}`, 40, 110);
-
-          // Write Topic Suggestions
-          doc.setFontSize(16);
-          doc.text('Topic Suggestions:', 40, 140);
-          doc.setFontSize(12);
-          let y = 160;
-          Array.from(topicsDiv.children).forEach(p => {
-            doc.text(`- ${p.textContent}`, 50, y);
-            y += 20;
-          });
-
-          // Write Research Questions
-          y += 10;
-          doc.setFontSize(16);
-          doc.text('Research Questions:', 40, y);
-          y += 20;
-          doc.setFontSize(12);
-          Array.from(researchQuestionsDiv.querySelectorAll('textarea')).forEach((ta, i) => {
-            const lines = doc.splitTextToSize(`${i + 1}. ${ta.value}`, 500);
-            doc.text(lines, 50, y);
-            y += lines.length * 16 + 5;
-          });
-
-          doc.save('IB_Topic_Suggestions.pdf');
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({
+          unit: 'pt',
+          format: 'a4'
         });
+
+        doc.setFontSize(20);
+        doc.text('IB IA & EE Topic Organizer Results', 40, 60);
+
+        // Write Mode and Subject
+        doc.setFontSize(12);
+        doc.text(`Mode: ${state.mode}`, 40, 90);
+        doc.text(`Subject: ${state.subject}`, 40, 110);
+
+        // Write Topic Suggestions
+        doc.setFontSize(16);
+        doc.text('Topic Suggestions:', 40, 140);
+        doc.setFontSize(12);
+        let y = 160;
+        Array.from(topicsDiv.children).forEach(p => {
+          doc.text(`- ${p.textContent}`, 50, y);
+          y += 20;
+        });
+
+        // Write Research Questions
+        y += 10;
+        doc.setFontSize(16);
+        doc.text('Research Questions:', 40, y);
+        y += 20;
+        doc.setFontSize(12);
+        Array.from(researchQuestionsDiv.querySelectorAll('textarea')).forEach((ta, i) => {
+          const lines = doc.splitTextToSize(`${i + 1}. ${ta.value}`, 500);
+          doc.text(lines, 50, y);
+          y += lines.length * 16 + 5;
+        });
+
+        doc.save('IB_Topic_Suggestions.pdf');
       });
 
       // Populate subjects on page load and load saved state
