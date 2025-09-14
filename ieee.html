@@ -20,7 +20,7 @@
     min-height: 100vh;
     padding: 15px 10px 30px 10px;
   }
-  #app {
+  .card {
     max-width: 350px;
     width: 100%;
     background: #ffffffdd;
@@ -32,6 +32,12 @@
     gap: 25px;
     user-select: none;
     max-height: 600px;
+  }
+  #app {
+    display: none;
+  }
+  #auth {
+    display: flex;
   }
   h1 {
     margin: 0;
@@ -69,9 +75,12 @@
     border: none;
     border-radius: 10px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, transform 0.2s ease;
     user-select: none;
     box-shadow: 0 6px 12px -6px rgba(58, 134, 255, 0.6);
+  }
+  .gradient-btn {
+    background: linear-gradient(90deg, #9b5de5, #3a86ff);
   }
   button:disabled {
     background: #88aaff99;
@@ -80,6 +89,19 @@
   }
   button:hover:not(:disabled) {
     background-color: #2e69d2;
+    transform: scale(1.02);
+  }
+  .link-button {
+    background: none;
+    color: #3a86ff;
+    padding: 0;
+    font-size: 0.9rem;
+    text-decoration: underline;
+    box-shadow: none;
+  }
+  .link-button:hover {
+    background: none;
+    color: #2e69d2;
   }
   #questionnaire {
     display: none;
@@ -152,7 +174,52 @@
 </style>
 </head>
 <body>
-  <div id="app" role="main" aria-label="IB IA and EE Topic Organizer Tool">
+  <div id="auth" class="card" role="region" aria-label="Authentication">
+    <div id="authChoices">
+      <h1>IB IA &amp; EE Topic Organizer</h1>
+      <div class="flex-row">
+        <button id="showLogin" class="gradient-btn">Log In</button>
+        <button id="showSignup" class="gradient-btn">Sign Up</button>
+      </div>
+    </div>
+    <form id="loginForm" style="display:none;flex-direction:column;gap:20px;">
+      <h2>Log In</h2>
+      <label for="loginEmail">Email</label>
+      <input type="email" id="loginEmail" required />
+      <label for="loginPassword">Password</label>
+      <input type="password" id="loginPassword" required />
+      <div class="flex-row">
+        <button type="submit">Log In</button>
+        <button type="button" id="loginBack">Back</button>
+      </div>
+    </form>
+    <form id="signupForm" style="display:none;flex-direction:column;gap:20px;">
+      <h2>Sign Up</h2>
+      <label for="signupEmail">Email</label>
+      <input type="email" id="signupEmail" required />
+      <label for="signupPassword">Password</label>
+      <input type="password" id="signupPassword" required />
+      <div class="flex-row">
+        <button type="submit">Send Code</button>
+        <button type="button" id="signupBack">Back</button>
+      </div>
+    </form>
+    <form id="verificationForm" style="display:none;flex-direction:column;gap:20px;">
+      <h2>Email Verification</h2>
+      <p>We've sent a 6-digit verification code to <strong id="verifyEmail"></strong>.</p>
+      <p id="codeHint" style="font-size:0.9rem;color:#555;"></p>
+      <label for="verificationInput">Verification Code</label>
+      <input type="text" id="verificationInput" maxlength="6" />
+      <div class="flex-row">
+        <button type="submit">Verify</button>
+        <button type="button" id="resendCode" class="link-button">Resend Code</button>
+        <button type="button" id="verificationBack" class="link-button">Change Email</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="app" class="card" role="main" aria-label="IB IA and EE Topic Organizer Tool">
+    <button id="signOutBtn" style="align-self:flex-end;background:#e63946;">Sign Out</button>
     <h1>IB IA &amp; EE Topic Organizer</h1>
 
     <div id="landing">
@@ -170,7 +237,7 @@
       </select>
       <small id="subjectDesc">Select your IB subject</small>
 
-      <button id="startBtn" disabled>Start Questionnaire</button>
+      <button id="startBtn" class="gradient-btn" disabled>Start Questionnaire</button>
     </div>
 
     <form id="questionnaire" aria-live="polite" aria-label="Questionnaire Form">
@@ -186,7 +253,7 @@
         <div id="researchQuestions" class="research-questions" aria-label="Editable research questions"></div>
 
         <div class="flex-row" style="margin-top:15px;">
-          <button id="regenerateBtn">Modify Answers / Regenerate</button>
+          <button id="regenerateBtn" class="gradient-btn">Modify Answers / Regenerate</button>
           <button id="exportPdfBtn">Export Results as PDF</button>
         </div>
       </div>
@@ -196,6 +263,117 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
     (function() {
+      // Authentication elements
+      const authDiv = document.getElementById('auth');
+      const authChoices = document.getElementById('authChoices');
+      const loginForm = document.getElementById('loginForm');
+      const signupForm = document.getElementById('signupForm');
+      const verificationForm = document.getElementById('verificationForm');
+      const showLoginBtn = document.getElementById('showLogin');
+      const showSignupBtn = document.getElementById('showSignup');
+      const loginBackBtn = document.getElementById('loginBack');
+      const signupBackBtn = document.getElementById('signupBack');
+      const verificationBackBtn = document.getElementById('verificationBack');
+      const resendCodeBtn = document.getElementById('resendCode');
+      const signupEmail = document.getElementById('signupEmail');
+      const signupPassword = document.getElementById('signupPassword');
+      const loginEmail = document.getElementById('loginEmail');
+      const loginPassword = document.getElementById('loginPassword');
+      const verificationInput = document.getElementById('verificationInput');
+      const verifyEmail = document.getElementById('verifyEmail');
+      const codeHint = document.getElementById('codeHint');
+      const appDiv = document.getElementById('app');
+      const signOutBtn = document.getElementById('signOutBtn');
+
+      let pendingSignup = {};
+      let generatedCode = '';
+
+      showLoginBtn.addEventListener('click', () => {
+        authChoices.style.display = 'none';
+        loginForm.style.display = 'flex';
+      });
+
+      showSignupBtn.addEventListener('click', () => {
+        authChoices.style.display = 'none';
+        signupForm.style.display = 'flex';
+      });
+
+      loginBackBtn.addEventListener('click', () => {
+        loginForm.style.display = 'none';
+        authChoices.style.display = 'flex';
+      });
+
+      signupBackBtn.addEventListener('click', () => {
+        signupForm.style.display = 'none';
+        authChoices.style.display = 'flex';
+      });
+
+      verificationBackBtn.addEventListener('click', () => {
+        verificationForm.style.display = 'none';
+        signupForm.style.display = 'flex';
+        verificationInput.value = '';
+        codeHint.textContent = '';
+      });
+
+      signupForm.addEventListener('submit', e => {
+        e.preventDefault();
+        pendingSignup = {
+          email: signupEmail.value.trim(),
+          password: signupPassword.value
+        };
+        generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
+        verifyEmail.textContent = pendingSignup.email;
+        codeHint.textContent = `Demo code: ${generatedCode}`;
+        signupForm.style.display = 'none';
+        verificationForm.style.display = 'flex';
+      });
+
+      resendCodeBtn.addEventListener('click', () => {
+        generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
+        codeHint.textContent = `Demo code: ${generatedCode}`;
+      });
+
+      verificationForm.addEventListener('submit', e => {
+        e.preventDefault();
+        if (verificationInput.value.trim() === generatedCode) {
+          const users = JSON.parse(localStorage.getItem('users') || '{}');
+          users[pendingSignup.email] = pendingSignup.password;
+          localStorage.setItem('users', JSON.stringify(users));
+          localStorage.setItem('loggedInUser', pendingSignup.email);
+          pendingSignup = {};
+          generatedCode = '';
+          verificationInput.value = '';
+          authDiv.style.display = 'none';
+          appDiv.style.display = 'flex';
+        } else {
+          alert('Incorrect verification code');
+        }
+      });
+
+      loginForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const email = loginEmail.value.trim();
+        const password = loginPassword.value;
+        const users = JSON.parse(localStorage.getItem('users') || '{}');
+        if (users[email] === password) {
+          localStorage.setItem('loggedInUser', email);
+          authDiv.style.display = 'none';
+          appDiv.style.display = 'flex';
+        } else {
+          alert('Invalid credentials');
+        }
+      });
+
+      signOutBtn.addEventListener('click', () => {
+        localStorage.removeItem('loggedInUser');
+        authDiv.style.display = 'flex';
+        authChoices.style.display = 'flex';
+        loginForm.style.display = 'none';
+        signupForm.style.display = 'none';
+        verificationForm.style.display = 'none';
+        appDiv.style.display = 'none';
+      });
+
       // IB subject groups and subjects (simplified for demo)
       const ibGroupsSubjects = {
         "Group 1": ["Language A: Literature", "Language A: Language and Literature"],
@@ -279,34 +457,58 @@
         "Biology": [
           "To what extent does {answer1} affect {answer2} in {answer3}?",
           "How does {answer2} influence {answer1} in {answer3}?",
-          "What is the relationship between {answer1} and {answer2} in the context of {answer3}?"
+          "What is the relationship between {answer1} and {answer2} in the context of {answer3}?",
+          "In what ways can {answer1} be manipulated to observe changes in {answer2} under {answer3}?",
+          "How significant is {answer2} as a factor for {answer1} considering {answer3}?"
         ],
         "History": [
           "How did {answer1} impact {answer2} during {answer3}?",
           "To what extent did {answer2} shape {answer1} in {answer3}?",
-          "What were the causes and effects of {answer1} on {answer2} in {answer3}?"
+          "What were the causes and effects of {answer1} on {answer2} in {answer3}?",
+          "What was the role of {answer1} in shaping {answer3} with respect to {answer2}?",
+          "How did {answer2} evolve as a consequence of {answer1} during {answer3}?"
         ],
         "Mathematics: Analysis and Approaches": [
           "How can {answer1} be applied to solve {answer3} using {answer2}?",
           "What are the implications of {answer1} in {answer3} with respect to {answer2}?",
-          "How effective is {answer2} in analyzing {answer1} related to {answer3}?"
+          "How effective is {answer2} in analyzing {answer1} related to {answer3}?",
+          "To what extent can {answer2} model {answer1} in scenarios of {answer3}?",
+          "What is the relationship between {answer1} and {answer2} when applied to {answer3}?"
         ],
         "Economics": [
           "What is the effect of {answer1} on {answer2} in {answer3}?",
           "To what extent does {answer1} influence {answer2} in the {answer3} market?",
-          "How does {answer2} mediate the relationship between {answer1} and {answer3}?"
+          "How does {answer2} mediate the relationship between {answer1} and {answer3}?",
+          "In what ways does {answer2} respond to changes in {answer1} within {answer3}?",
+          "How might {answer1} reshape {answer3} through its effect on {answer2}?"
         ],
         "English": [
           "How does {answer2} illustrate the theme of {answer1} in {answer3}?",
           "What role does {answer1} play in expressing {answer2} within {answer3}?",
-          "In what ways does {answer3} explore the concepts of {answer1} and {answer2}?"
+          "In what ways does {answer3} explore the concepts of {answer1} and {answer2}?",
+          "How is {answer1} portrayed through {answer2} in {answer3}?",
+          "To what extent does {answer3} connect {answer1} with {answer2}?"
         ],
         "Psychology": [
           "To what extent does {answer1} affect {answer2} in {answer3}?",
           "How does {answer2} moderate the influence of {answer1} on {answer3}?",
-          "What is the effect of {answer1} on {answer3} among {answer2}?"
+          "What is the effect of {answer1} on {answer3} among {answer2}?",
+          "What role does {answer2} play in mediating {answer1}'s impact on {answer3}?",
+          "How does {answer1} correlate with {answer2} under the conditions of {answer3}?"
         ]
       };
+
+      const topicTemplates = [
+        'Exploring the impact of "{answer1}" on "{answer2}"',
+        'A study of "{answer1}" within the context of "{answer3}"',
+        'Investigating how "{answer2}" shapes "{answer1}" in "{answer3}"',
+        'Evaluating the role of "{answer1}" in "{subject}" with respect to "{answer2}"',
+        'Assessing the relationship between "{answer1}" and "{answer2}" in "{answer3}"',
+        'The influence of "{answer1}" on "{answer3}" considering "{answer2}"'
+      ];
+
+      const usedTopics = new Set();
+      const usedRqs = new Set();
 
       // Store state
       const state = {
@@ -464,16 +666,33 @@
         questionnaireForm.style.display = 'none';
         resultsDiv.style.display = 'flex';
 
-        // Generate 3 topic suggestions (simple concatenations inspired by answers)
-        const topics = [];
         const ans = state.answers;
 
-        // Basic topic ideas using answers
-        topics.push(`Exploring the impact of "${ans[0]}" on "${ans[1]}"`);
-        topics.push(`A study of "${ans[1]}" within the context of "${ans[2]}"`);
-        topics.push(`Investigating the role of "${ans[0]}" and "${ans[2]}" in "${state.subject}"`);
+        const fill = tpl => tpl
+          .replace(/{answer1}/g, ans[0])
+          .replace(/{answer2}/g, ans[1])
+          .replace(/{answer3}/g, ans[2])
+          .replace(/{subject}/g, state.subject);
 
-        // Render topics
+        function pickUnique(arr, count, history) {
+          const res = [];
+          const maxAttempts = arr.length * 3;
+          let attempts = 0;
+          while (res.length < count && attempts < maxAttempts) {
+            attempts++;
+            const tpl = arr[Math.floor(Math.random() * arr.length)];
+            const text = fill(tpl);
+            if (!history.has(text)) {
+              history.add(text);
+              res.push(text);
+            }
+            if (history.size === arr.length) history.clear();
+          }
+          return res;
+        }
+
+        // Topics
+        const topics = pickUnique(topicTemplates, 3, usedTopics);
         topicsDiv.innerHTML = '';
         topics.forEach(t => {
           const p = document.createElement('p');
@@ -482,28 +701,23 @@
           topicsDiv.appendChild(p);
         });
 
-        // Generate editable research questions by filling templates
+        // Research questions
         const templates = researchQuestionTemplates[state.subject] || [];
-
         if (templates.length === 0) {
           researchQuestionsDiv.innerHTML = '<p>No research question templates defined.</p>';
           return;
         }
 
+        const rqs = pickUnique(templates, 3, usedRqs);
         researchQuestionsDiv.innerHTML = '';
-        // Generate 3 research questions and create textareas
-        for (let i=0; i<3; i++) {
-          const rqText = templates[i % templates.length]
-            .replace(/{answer1}/g, ans[0])
-            .replace(/{answer2}/g, ans[1])
-            .replace(/{answer3}/g, ans[2]);
+        rqs.forEach((rqText, i) => {
           const textarea = document.createElement('textarea');
           textarea.className = 'editable-textarea';
           textarea.rows = 3;
           textarea.value = rqText;
-          textarea.setAttribute('aria-label', `Research Question ${i+1}`);
+          textarea.setAttribute('aria-label', `Research Question ${i + 1}`);
           researchQuestionsDiv.appendChild(textarea);
-        }
+        });
       }
 
       // Regenerate: go back to questionnaire to edit answers
@@ -561,6 +775,13 @@
             subjectSelect.disabled = false;
             startBtn.disabled = false;
           }
+        }
+        if (localStorage.getItem('loggedInUser')) {
+          authDiv.style.display = 'none';
+          appDiv.style.display = 'flex';
+        } else {
+          appDiv.style.display = 'none';
+          authDiv.style.display = 'flex';
         }
       });
     })();
