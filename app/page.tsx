@@ -21,6 +21,14 @@ const reasons = [
   'Local team to keep you updated until delivery.',
 ];
 
+const brands = [
+  { slug: 'amazon', name: 'Amazon' },
+  { slug: 'nike', name: 'Nike' },
+  { slug: 'boohoo', name: 'Boohoo' },
+  { slug: 'asos', name: 'ASOS' },
+  { slug: 'shein', name: 'Shein' },
+];
+
 export default function HomePage() {
   return (
     <div className="space-y-12">
@@ -81,6 +89,27 @@ export default function HomePage() {
         <div className="card p-6 space-y-3 text-slate-700">
           {reasons.map((reason) => (
             <p key={reason}>• {reason}</p>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold text-slate-900">Shop by brand</h2>
+          <Link href="/shop/amazon" className="text-sm text-emerald-700 font-semibold">
+            View all
+          </Link>
+        </div>
+        <div className="flex gap-4 overflow-x-auto pb-2">
+          {brands.map((brand) => (
+            <Link
+              key={brand.slug}
+              href={`/shop/${brand.slug}`}
+              className="min-w-[150px] flex-1 bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:-translate-y-1 transition"
+            >
+              <div className="text-lg font-semibold text-slate-900">{brand.name}</div>
+              <p className="text-sm text-slate-600 mt-2">Curated for Ghana shoppers</p>
+            </Link>
           ))}
         </div>
       </section>

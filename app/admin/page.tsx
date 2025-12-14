@@ -1,104 +1,81 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from "react";
 
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'concierge-admin';
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "concierge-admin";
 
-interface PricingInput {
-  item_price_usd: number;
-  shipping_cost: number;
-  customs_estimate: number;
-  service_fee: number;
-}
-
-interface RequestRecord {
-  id: number;
-  product_url: string;
-  quantity: number;
-  size_color?: string;
-  delivery_location: string;
-  phone: string;
-  email: string;
-  status: string;
-  created_at: string;
-  pricing?: PricingInput & { total_ghs: number };
-  payment_status?: string;
-}
+const statuses = ["submitted", "quoted", "paid", "ordered", "shipped", "delivered"];
 
 export default function AdminPage() {
-  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState("");
   const [authorized, setAuthorized] = useState(false);
-  const [requests, setRequests] = useState<RequestRecord[]>([]);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [pricing, setPricing] = useState<PricingInput>({
-    item_price_usd: 0,
-    shipping_cost: 0,
-    customs_estimate: 0,
-    service_fee: 0,
+  const [orders, setOrders] = useState<any[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  const [quote, setQuote] = useState({
+    item_cost_usd: 0,
+    shipping_usd: 0,
+    customs_usd: 0,
+    service_fee_usd: 0,
+    fx_rate_used: 15,
   });
-  const [message, setMessage] = useState('');
-
-  const selectedRequest = useMemo(
-    () => requests.find((r) => r.id === selectedId) ?? null,
-    [requests, selectedId],
-  );
 
   useEffect(() => {
-    if (!authorized) return;
-    fetchRequests();
+    if (authorized) refresh();
   }, [authorized]);
 
-  const fetchRequests = async () => {
-    const res = await fetch('/api/requests');
-    if (!res.ok) return;
+  async function refresh() {
+    const res = await fetch("/api/orders");
     const data = await res.json();
-    setRequests(data.requests);
-  };
+    setOrders(data.orders || []);
+  }
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthorized(passwordInput === ADMIN_PASSWORD);
-    setMessage(passwordInput === ADMIN_PASSWORD ? '' : 'Incorrect password');
-  };
-
-  const handleSelect = (id: number) => {
+  function select(id: string) {
     setSelectedId(id);
-    const found = requests.find((r) => r.id === id);
-    if (found?.pricing) {
-      setPricing({
-        item_price_usd: found.pricing.item_price_usd,
-        shipping_cost: found.pricing.shipping_cost,
-        customs_estimate: found.pricing.customs_estimate,
-        service_fee: found.pricing.service_fee,
-      });
-    } else {
-      setPricing({ item_price_usd: 0, shipping_cost: 0, customs_estimate: 0, service_fee: 0 });
-    }
-  };
+    const found = orders.find((o) => o.id === id);
+    if (found?.quote) setQuote(found.quote);
+  }
 
-  const handlePricingSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  async function saveQuote() {
     if (!selectedId) return;
-    const res = await fetch(`/api/requests/${selectedId}/pricing`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(pricing),
+    const res = await fetch(`/api/orders/${selectedId}/quote`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(quote),
     });
     if (res.ok) {
-      setMessage('Pricing saved and customer can pay.');
-      fetchRequests();
+      setMessage("Quote saved. Share pay link.");
+      refresh();
     } else {
-      setMessage('Could not save pricing.');
+      setMessage("Could not save quote.");
     }
-  };
+  }
 
-  const paymentLink = selectedRequest ? `${typeof window !== 'undefined' ? window.location.origin : ''}/pay/${selectedRequest.id}` : '';
+  async function changeStatus(status: string) {
+    if (!selectedId) return;
+    await fetch(`/api/orders/${selectedId}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    refresh();
+  }
+
+  const selectedOrder = orders.find((o) => o.id === selectedId);
+  const payLink = selectedOrder ? `${typeof window !== "undefined" ? window.location.origin : ""}/pay/${selectedOrder.id}` : "";
 
   if (!authorized) {
     return (
       <div className="max-w-md card p-6 space-y-4">
         <h1 className="text-2xl font-semibold text-slate-900">Admin access</h1>
-        <form onSubmit={handleLogin} className="space-y-3">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setAuthorized(passwordInput === ADMIN_PASSWORD);
+            setMessage(passwordInput === ADMIN_PASSWORD ? "" : "Incorrect password");
+          }}
+          className="space-y-3"
+        >
           <input
             type="password"
             value={passwordInput}
@@ -117,114 +94,108 @@ export default function AdminPage() {
     <div className="grid lg:grid-cols-3 gap-6">
       <div className="lg:col-span-1 space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-slate-900">Requests</h1>
-          <button
-            onClick={fetchRequests}
-            className="text-sm text-emerald-700 font-semibold hover:text-emerald-800"
-          >
+          <h1 className="text-2xl font-semibold text-slate-900">Orders</h1>
+          <button onClick={refresh} className="text-sm text-emerald-700 font-semibold hover:text-emerald-800">
             Refresh
           </button>
         </div>
         <div className="space-y-3">
-          {requests.map((request) => (
+          {orders.map((order) => (
             <button
-              key={request.id}
-              onClick={() => handleSelect(request.id)}
+              key={order.id}
+              onClick={() => select(order.id)}
               className={`w-full text-left card p-4 border-2 ${
-                selectedId === request.id ? 'border-emerald-500' : 'border-transparent'
+                selectedId === order.id ? "border-emerald-500" : "border-transparent"
               }`}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-semibold text-slate-900">Request #{request.id}</p>
-                  <p className="text-sm text-slate-600 line-clamp-1">{request.product_url}</p>
+                  <p className="font-semibold text-slate-900">Order {order.id}</p>
+                  <p className="text-sm text-slate-600">{order.customer?.phone}</p>
                 </div>
-                <span
-                  className={`text-xs px-2 py-1 rounded-full ${
-                    request.status === 'paid'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : request.status === 'priced'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-amber-100 text-amber-800'
-                  }`}
-                >
-                  {request.status}
-                </span>
+                <span className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700">{order.status}</span>
               </div>
-              <p className="text-xs text-slate-500">{new Date(request.created_at).toLocaleString()}</p>
+              <p className="text-xs text-slate-500">{new Date(order.created_at._seconds * 1000).toLocaleString()}</p>
             </button>
           ))}
         </div>
       </div>
 
       <div className="lg:col-span-2">
-        {selectedRequest ? (
+        {selectedOrder ? (
           <div className="card p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">Request #{selectedRequest.id}</h2>
-                <p className="text-sm text-slate-600">Status: {selectedRequest.status}</p>
+                <h2 className="text-xl font-semibold text-slate-900">Order {selectedOrder.id}</h2>
+                <p className="text-sm text-slate-600">Status: {selectedOrder.status}</p>
               </div>
-              {paymentLink && (
-                <a className="text-sm text-emerald-700 hover:text-emerald-800" href={paymentLink} target="_blank">
-                  Open payment page
+              {payLink && (
+                <a className="text-sm text-emerald-700 hover:text-emerald-800" href={payLink} target="_blank">
+                  Open pay link
                 </a>
               )}
             </div>
 
             <div className="bg-slate-50 rounded-lg p-4 text-sm space-y-1">
-              <p className="font-semibold text-slate-800">Product</p>
-              <a href={selectedRequest.product_url} className="text-emerald-700 underline break-all" target="_blank">
-                {selectedRequest.product_url}
-              </a>
-              <p>Quantity: {selectedRequest.quantity}</p>
-              {selectedRequest.size_color && <p>Size/Color: {selectedRequest.size_color}</p>}
-              <p>Delivery: {selectedRequest.delivery_location}</p>
-              <p>Contact: {selectedRequest.phone} · {selectedRequest.email}</p>
+              <p className="font-semibold text-slate-800">Customer</p>
+              <p>{selectedOrder.customer?.name}</p>
+              <p>{selectedOrder.customer?.phone} · {selectedOrder.customer?.email}</p>
+              <p>Address: {selectedOrder.address?.area} · {selectedOrder.address?.details}</p>
             </div>
 
-            <form onSubmit={handlePricingSubmit} className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <p className="font-semibold text-slate-800">Items</p>
+              <ul className="list-disc list-inside text-sm text-slate-700">
+                {selectedOrder.items?.map((it: any) => (
+                  <li key={it.id} className="break-all">
+                    {it.type === "link" ? it.url : it.itemName} x{it.quantity}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
               {([
-                ['item_price_usd', 'Item price (USD)'],
-                ['shipping_cost', 'Shipping cost (USD)'],
-                ['customs_estimate', 'Customs estimate (USD)'],
-                ['service_fee', 'Service fee (USD)'],
+                ["item_cost_usd", "Item cost (USD)"],
+                ["shipping_usd", "Shipping (USD)"],
+                ["customs_usd", "Customs (USD)"],
+                ["service_fee_usd", "Service fee (USD)"],
+                ["fx_rate_used", "FX rate used"],
               ] as const).map(([key, label]) => (
-                <div key={key} className="space-y-2">
-                  <label className="block text-sm font-medium text-slate-800">{label}</label>
+                <label key={key} className="text-sm font-semibold text-slate-800 space-y-1">
+                  {label}
                   <input
                     type="number"
                     step="0.01"
-                    value={pricing[key]}
-                    onChange={(e) => setPricing({ ...pricing, [key]: Number(e.target.value) })}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2"
+                    value={quote[key as keyof typeof quote]}
+                    onChange={(e) => setQuote({ ...quote, [key]: Number(e.target.value) })}
+                    className="input"
                   />
-                </div>
+                </label>
               ))}
-              <div className="md:col-span-2">
-                <button className="bg-slate-900 text-white px-4 py-2 rounded-lg">Save pricing</button>
-              </div>
-            </form>
+            </div>
+            <button className="btn-primary" onClick={saveQuote}>
+              Save quote & mark quoted
+            </button>
 
-            {selectedRequest.pricing && (
-              <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-4 text-emerald-900 text-sm">
-                <p className="font-semibold">Quote breakdown</p>
-                <p>Item: ${selectedRequest.pricing.item_price_usd.toFixed(2)}</p>
-                <p>Shipping: ${selectedRequest.pricing.shipping_cost.toFixed(2)}</p>
-                <p>Customs: ${selectedRequest.pricing.customs_estimate.toFixed(2)}</p>
-                <p>Service fee: ${selectedRequest.pricing.service_fee.toFixed(2)}</p>
-                <p className="mt-2 text-lg font-semibold">Total (GHS): {selectedRequest.pricing.total_ghs.toFixed(2)}</p>
-                <p className="text-xs text-emerald-800 mt-1">Share payment link with customer: {paymentLink}</p>
-                {selectedRequest.payment_status === 'paid' && (
-                  <p className="text-sm text-emerald-800 mt-2">Payment received.</p>
-                )}
-              </div>
-            )}
+            <div className="flex gap-2 flex-wrap">
+              {statuses.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => changeStatus(s)}
+                  className={`px-3 py-2 rounded-lg border text-sm ${
+                    selectedOrder.status === s ? "bg-emerald-600 text-white" : "bg-white border-slate-200"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
 
-            {message && <p className="text-sm text-slate-700">{message}</p>}
+            {message && <p className="text-sm text-emerald-700">{message}</p>}
           </div>
         ) : (
-          <div className="text-slate-600">Select a request to manage pricing.</div>
+          <div className="card p-6 text-slate-700">Select an order to manage.</div>
         )}
       </div>
     </div>

@@ -1,6 +1,6 @@
 # Cross-Border Concierge MVP
 
-A lightweight Next.js + SQLite MVP that lets Ghanaian shoppers submit product requests, receive manual pricing, and pay via a simulated link.
+A Ghana-first concierge shopping flow (Next.js + Firestore) with brand browsing, Easy Mode carts, and Hubtel-ready payments.
 
 ## Getting started
 1. Use Node 18 or 20 (recommended: Node 20 LTS). If you have `nvm`, run:
@@ -12,30 +12,40 @@ A lightweight Next.js + SQLite MVP that lets Ghanaian shoppers submit product re
    ```bash
    npm install
    ```
-2. Run the dev server:
+3. Copy env template and fill in secrets:
+   ```bash
+   cp .env.example .env.local
+   ```
+4. Run the dev server:
    ```bash
    npm run dev
    ```
-3. Open http://localhost:3000.
+5. Open http://localhost:3000.
 
 ## Admin access
 - Visit `/admin` and enter the password `concierge-admin` (override by setting `NEXT_PUBLIC_ADMIN_PASSWORD`).
-- Create pricing to generate totals and a payment link for each request.
+- Select an order, add quote fields (USD), set FX, and copy the pay link.
+- Update status milestones (submitted → quoted → paid → ordered → shipped → delivered).
 
-## Payment simulation
-- Customers visit `/pay/{requestId}`.
-- Clicking **Pay Now** calls a mock endpoint, marks the request as paid, and stores a payment reference.
+## Payments (Hubtel-ready)
+- `/pay/{orderId}` shows invoice and starts Hubtel checkout (Mobile Money + card) from the server.
+- If Hubtel keys are missing, payments are simulated and the order is marked paid.
+- Webhook endpoint: `/api/payments/hubtel/webhook` (configure in Hubtel dashboard).
 
 ## Environment
-- Currency conversion uses `EXCHANGE_RATE_GHS_PER_USD` (defaults to `12`).
-- SQLite database is stored in `data/app.db`.
+- Firestore Admin (service account):
+  - `FIREBASE_PROJECT_ID`
+  - `FIREBASE_CLIENT_EMAIL`
+  - `FIREBASE_PRIVATE_KEY` (escape newlines as `\n`)
+- Hubtel (optional for live payments):
+  - `HUBTEL_API_KEY`
+  - `HUBTEL_MERCHANT_ACCOUNT`
+  - `NEXT_PUBLIC_BASE_URL` (e.g., `http://localhost:3000` or your deployed URL)
+- Admin password: `NEXT_PUBLIC_ADMIN_PASSWORD` (default `concierge-admin`).
 
 ### If `npm install` fails on macOS (Apple Silicon)
-- Node 24+ requires a C++20 toolchain; macOS command-line tools often default to C++17, which can break native addons like `better-sqlite3`.
-- Fix by switching to Node 20 via `nvm install 20 && nvm use 20` (matches `.nvmrc`).
-- Ensure the Xcode Command Line Tools are present: `xcode-select --install`.
-- Retry `npm install` afterward.
+- Stick to Node 20 (`nvm install 20 && nvm use 20`).
+- Ensure Xcode Command Line Tools: `xcode-select --install`.
 
 ## Deploying
-- Works on platforms that support Next.js (e.g., Vercel). Ensure the `data` directory is writable or connect to a managed Postgres/SQLite equivalent.
-- Set environment variables in your host to match the ones above.
+- Works on Vercel/Node hosts. Provide env vars above. Firestore is managed; no local DB file required.
